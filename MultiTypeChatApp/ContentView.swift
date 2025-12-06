@@ -8,30 +8,43 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var messages: [any ChatMessageDisplayable] = MockDataLoader.loadMessages()
-
     var body: some View {
-        NavigationStack {
-            MessageListView(messages: messages)
-                .navigationTitle("Chat")
-        }
+        MessageListView()
     }
 }
 
 struct MessageListView: View {
-    let messages: [any ChatMessageDisplayable]
+    @State private var messages: [any ChatMessageDisplayable] = []
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 16) {
-                ForEach(Array(messages.enumerated()), id: \.element.id) { _, message in
-                    message.toView()
-                        .id(message.id)
+        NavigationStack {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 16) {
+                    ForEach(Array(messages.enumerated()), id: \.element.id) { _, message in
+                        message.toView()
+                            .id(message.id)
+                    }
                 }
+                .padding()
             }
-            .padding()
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("Chat")
         }
-        .background(Color(.systemGroupedBackground))
+        .onAppear {
+            Task {
+                await loadMessages()
+            }
+        }
+    }
+
+    @MainActor
+    private func loadMessages() async {
+        let loadedMessages = await fetchMessages()
+        messages = loadedMessages
+    }
+
+    private func fetchMessages() async -> [any ChatMessageDisplayable] {
+        MockDataLoader.loadMessages()
     }
 }
 
