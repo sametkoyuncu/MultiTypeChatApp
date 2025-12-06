@@ -1,52 +1,40 @@
 # MultiTypeChatApp
 
-MultiTypeChatApp, farklı türde sohbet mesajlarını tek bir zaman çizelgesinde göstermeyi amaçlayan küçük bir SwiftUI örnek uygulamasıdır. Projenin temel hedefi, **opaque type** kullanımı (`some View`) ve heterojen koleksiyonlarda **type erasure** ile tip güvenliğinin nasıl korunacağını göstermek; aynı zamanda farklı veri modellerini tek bir protokol üzerinden yönetebilmenin pratik yollarını sunmaktır.
+MultiTypeChatApp, farklı türde sohbet mesajlarını aynı zaman çizelgesinde göstermek için hazırlanmış küçük bir SwiftUI örnek projesidir. Amaç; **opaque type** (`some View`) ve heterojen koleksiyonlarda **type erasure** (ör. `AnyView`) gerektirmeden tip güvenliğini korumayı ve farklı veri modellerini tek protokol üzerinden yönetmeyi göstermektir.
 
-## Güncel özellikler
-- Metin, görsel, alıntı, sistem bildirimi ve etkileşimli widget mesajlarını aynı listede toplar.
-- `ChatMessageDisplayable` protokolü her mesajın kendi SwiftUI görünümünü üretmesini sağlar, dış katman yalnızca ortak metadata'yı bilir.
-- `MessageEnvelope` JSON içindeki `type` alanını okuyarak doğru modele yönlendirir, yeni tip eklemek için tek bir enum güncellemesi yeterlidir.
-- Akış hissi için mesajlar `Task` içinde sırayla yüklenir, küçük gecikmeler ve animasyonlar eklenir.
-- Görseller `AsyncImage` ile uzaktan yüklenir; hata ve yüklenme durumları kullanıcıya yansıtılır.
+## Neler içeriyor?
+- **Mesaj tipleri:** Metin, görsel, alıntı, sistem bildirimi ve etkileşimli widget mesajlarını tek listede toplar.
+- **Opaque görünüm üretimi:** `ChatMessageDisplayable` protokolü her mesajın kendi SwiftUI görünümünü `some View` ile döndürmesini zorunlu kılar; çağıran katman sadece ortak metadata'yı bilir.
+- **Tür ayrıştırma (discriminated union):** `MessageEnvelope` JSON içindeki `type` alanını okuyup doğru modele yönlendirir; yeni tip eklemek yalnızca `MessageType` enum’una dokunmayı gerektirir.
+- **Akış hissi:** `MessageListView` mesajları `Task` içinde sırayla ekler, kısa gecikmeler ve animasyonlarla canlı bir timeline sunar.
+- **Uzaktan içerik:** Görseller `AsyncImage` ile yüklenir; yüklenme ve hata durumları kullanıcıya gösterilir.
+- **Önizleme kolaylığı:** `MockDataLoader.loadPreviewMessages()` SwiftUI Preview’da hızlıca çalışır, gerçek yükleme akışını beklemeden tasarım görmenizi sağlar.
 
-## Adım adım akış (ne yapıyor, neden yapıyor?)
-1. **Giriş ve iskelet** – `MultiTypeChatAppApp` uygulamayı açar ve `MessageListView` ile bir gezinti yığını başlatır. Amaç: örneği minimum kabukla ayağa kaldırmak.
-2. **Durum hazırlığı** – `MessageListView` `@State` ile mesaj listesini ve yükleme durumunu tutar. Amaç: SwiftUI'da basit state yönetimi ve animasyon tetikleyebilmek.
-3. **Veri yükleme** – `onAppear` içinde `loadMessages()` çağrılır; her mesaj için `Task.sleep` kullanarak araya kısa gecikmeler eklenir. Amaç: gerçek zamanlı akış hissi ve animasyonlu ekleme örneği.
-4. **JSON ayrıştırma** – `MockDataLoader.decodeMessages` örnek JSON'u `MessageEnvelope` aracılığıyla çözer, `MessageType` ayrıştırıcıyı kullanır. Amaç: tür ayrıştırma (discriminated union) mantığını göstermek.
-5. **Görselleştirme** – Her öğe `MessageBubble` içinde avatar, kullanıcı adı ve saatle birlikte kendi `toView()` çıktısını üretir. Amaç: opaque view ile içerik detayını saklayıp ortak kabuğu paylaşmak.
-6. **Etkileşim** – `WidgetMessageView` seçim yapılan butonları işler, seçilen metni anlık gösterir. Amaç: chat içindeki mini eylem bileşenlerini tanıtmak.
+## Mimarinin hızlı turu
+1. **Giriş noktası:** `MultiTypeChatAppApp` uygulamayı açar ve `MessageListView` ile gezinme yığını (navigation stack) başlatır.
+2. **Durum (state) yönetimi:** `MessageListView` mesajları ve yükleme durumunu `@State` ile tutar; akış animasyonlarını tetikler.
+3. **Veri yükleme:** `MockDataLoader.loadMessages()` statik JSON’u çözer, `MessageEnvelope` üzerinden doğru modele çevirir.
+4. **Görselleştirme:** Her `ChatMessage` öğesi `MessageBubble` içinde avatar, ad ve saatle gösterilir; içerik view’i `message.toView()` ile opaque şekilde üretilir.
+5. **Etkileşim:** `WidgetMessageView` seçenekli butonları işler ve seçimi anında balon içinde gösterir; boş gelen seçenekler için güvenli varsayılan üretir.
 
-## Öne çıkan tipler ve dosyalar
-- **`ContentView.swift`**: `MessageListView` ile zaman çizelgesini kurar, sıralı yüklemeyi ve başlıkları yönetir.
-- **`Models/ChatMessageDisplayable.swift`**: `ChatMessageDisplayable` protokolü ve `MessageEnvelope` ayrıştırıcısı burada bulunur.
-- **`Models/*.swift`**: Metin, görsel, alıntı, sistem ve widget mesaj modelleri ayrı dosyalara bölünmüştür.
-- **`Views/WidgetMessageView.swift`**: Çoktan seçmeli butonlarla etkileşimli içerik örneği sunar.
-- **`Data/MockDataLoader.swift`**: Örnek JSON verisini yükler ve `MessageEnvelope` üzerinden modelleri çözer.
-
-## Öğrenme ve inceleme roadmap'i
-- **Başlangıç: Protokoller ve opaque view'lar** – `ChatMessageDisplayable` ve `toView()` imzasını inceleyin; SwiftUI `some View` ve `AnyView` farkını hatırlayın.
-- **Devam: Tür ayrıştırma** – `MessageEnvelope` ve `MessageType` enum'una bakarak JSON'dan modele akışı takip edin; yeni tip eklemek için gerekli dokunuşları not alın.
-- **Görsel katman: Liste ve kabuk** – `MessageListView` ve `MessageBubble` içinde avatar/başlık render'ına bakın; animasyon ve `Task.sleep` kullanımıyla stream etkisini inceleyin.
-- **Etkileşim: Widget mesajı** – `WidgetMessageView` içinde state yönetimini ve buton stillerini gözden geçirin; seçeneklerin boş geldiği senaryoda varsayılan seçeneğin nasıl üretildiğini görün.
-- **Deney: Kendi tipinizi ekleyin** – Yeni bir mesaj modeli tanımlayıp `MessageType` ve `MessageEnvelope`'a ekleyin, `MockDataLoader.liveJSON` içinde örnek veriyle test edin.
+## Öne çıkan dosyalar
+- `MultiTypeChatAppApp.swift`: SwiftUI uygulama girişi.
+- `ContentView.swift`: Basit kabuk; doğrudan `MessageListView`’i barındırır.
+- `Models/ChatMessageDisplayable.swift`: Opaque görünüm üreten protokol, `MessageType` enum’u ve `ChatMessage` wrapper’ı.
+- `Models/*.swift`: Metin, görsel, alıntı, sistem ve widget mesaj modelleri.
+- `Views/MessageListView.swift`: Zaman çizelgesini ve yükleme akışını yönetir.
+- `Views/MessageBubble.swift`: Ortak kabuk (avatar, başlık, zaman) ve içerik kapsayıcısı.
+- `Views/WidgetMessageView.swift`: Etkileşimli widget mesajını render eder.
+- `Data/MockDataLoader.swift`: Canlı ve önizleme için statik JSON kaynakları ve ayrıştırma yardımcıları.
 
 ## Çalıştırma
-- Xcode 15+ ile projeyi açın (`MultiTypeChatApp.xcodeproj`).
-- Hedef olarak **MultiTypeChatApp**'i seçip iOS simülatörde `Run` edin.
-- SwiftUI Önizlemeleri için `ContentView.swift` içindeki `#Preview` bloğunu kullanarak yükleme simülasyonunu beklemeden hızlıca göz atın.
+1. Xcode 15+ ile `MultiTypeChatApp.xcodeproj` dosyasını açın.
+2. Hedef olarak **MultiTypeChatApp**’i seçip iOS simülatörde **Run** edin.
+3. SwiftUI Önizlemeleri için `ContentView.swift` içindeki `#Preview` bloğunu seçin; `MockDataLoader.loadPreviewMessages()` hızlıca örnek veri sağlar.
 
-## Dosya yapısı (özet)
-- `MultiTypeChatAppApp.swift`: Uygulama giriş noktası.
-- `ContentView.swift`: Mesaj listesi ve yükleme akışı.
-- `Models/`: Mesaj protokolü (`ChatMessageDisplayable`), `MessageEnvelope` ve tüm mesaj modelleri.
-- `Views/`: Zaman çizelgesi (`MessageListView`), balon görünümü (`MessageBubble`) ve etkileşimli widget.
-- `Data/MockDataLoader.swift`: JSON kaynakları ve ayrıştırma yardımcıları.
-- `Assets.xcassets`: Uygulama ikonları ve renk varlıkları.
+## Neyi incelemeli?
+- **Opaque type kullanımı:** `ChatMessageDisplayable.toView()` imzası ve her modelin `some View` döndürmesi, `AnyView` olmadan tür güvenliğini nasıl koruduğunu gösterir.
+- **Yeni tip ekleme:** `MessageType` enum’una yeni değer ekleyip ilgili model dosyasını yazmanız ve `MessageEnvelope` içinde case eklemeniz yeterlidir.
+- **Akış animasyonu:** `MessageListView.loadMessages()` içindeki ardışık ekleme ve `withAnimation` kullanımı zaman çizelgesinin hissini belirler.
 
-## İleri okuma
-- [Swift Language Guide – Protocols](https://docs.swift.org/swift-book/LanguageGuide/Protocols.html)
-- [SwiftUI – Type Erasure with AnyView](https://developer.apple.com/documentation/swiftui/anyview)
-- [Opaque Types in Swift](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/opaque-types/)
-
-Bu doküman, demo uygulamanın son halini ve öğrenme odaklı akışını hızlıca kavramak isteyenler için rehber niteliğindedir.
+Bu doküman, projenin güncel halini özetler ve özellikle opaque SwiftUI görünümleriyle çoklu mesaj tiplerini yönetmek isteyen geliştiriciler için hızlı rehber sağlar.
