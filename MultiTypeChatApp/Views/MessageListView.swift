@@ -4,11 +4,13 @@ import SwiftUI
 struct MessageListView: View {
     @State private var messages: [any ChatMessageDisplayable] = []
     @State private var isLoading = false
+    private let shouldAutoLoad: Bool
 
     /// Allows injecting preview data to bypass loading animations in SwiftUI previews.
     init(previewMessages: [any ChatMessageDisplayable] = []) {
         _messages = State(initialValue: previewMessages)
         _isLoading = State(initialValue: previewMessages.isEmpty)
+        self.shouldAutoLoad = previewMessages.isEmpty
     }
 
     var body: some View {
@@ -32,6 +34,7 @@ struct MessageListView: View {
             .navigationTitle("Sohbet")
         }
         .onAppear {
+            guard shouldAutoLoad else { return }
             Task {
                 await loadMessages()
             }

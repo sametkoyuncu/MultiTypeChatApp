@@ -19,8 +19,10 @@ MultiTypeChatApp, farklı türde sohbet mesajlarını tek bir zaman çizelgesind
 
 ## Öne çıkan tipler ve dosyalar
 - **`ContentView.swift`**: `MessageListView` ile zaman çizelgesini kurar, sıralı yüklemeyi ve başlıkları yönetir.
-- **`ChatMessages.swift`**: `ChatMessageDisplayable`, `MessageEnvelope`, mesaj modelleri ve `MockDataLoader` burada yer alır.
-- **`WidgetMessageView`**: Çoktan seçmeli butonlarla etkileşimli içerik örneği sunar.
+- **`Models/ChatMessageDisplayable.swift`**: `ChatMessageDisplayable` protokolü ve `MessageEnvelope` ayrıştırıcısı burada bulunur.
+- **`Models/*.swift`**: Metin, görsel, alıntı, sistem ve widget mesaj modelleri ayrı dosyalara bölünmüştür.
+- **`Views/WidgetMessageView.swift`**: Çoktan seçmeli butonlarla etkileşimli içerik örneği sunar.
+- **`Data/MockDataLoader.swift`**: Örnek JSON verisini yükler ve `MessageEnvelope` üzerinden modelleri çözer.
 
 ## Öğrenme ve inceleme roadmap'i
 - **Başlangıç: Protokoller ve opaque view'lar** – `ChatMessageDisplayable` ve `toView()` imzasını inceleyin; SwiftUI `some View` ve `AnyView` farkını hatırlayın.
@@ -37,7 +39,9 @@ MultiTypeChatApp, farklı türde sohbet mesajlarını tek bir zaman çizelgesind
 ## Dosya yapısı (özet)
 - `MultiTypeChatAppApp.swift`: Uygulama giriş noktası.
 - `ContentView.swift`: Mesaj listesi ve yükleme akışı.
-- `ChatMessages.swift`: Mesaj modelleri, protokol, JSON ayrıştırma ve örnek veri.
+- `Models/`: Mesaj protokolü (`ChatMessageDisplayable`), `MessageEnvelope` ve tüm mesaj modelleri.
+- `Views/`: Zaman çizelgesi (`MessageListView`), balon görünümü (`MessageBubble`) ve etkileşimli widget.
+- `Data/MockDataLoader.swift`: JSON kaynakları ve ayrıştırma yardımcıları.
 - `Assets.xcassets`: Uygulama ikonları ve renk varlıkları.
 
 ## İleri okuma
