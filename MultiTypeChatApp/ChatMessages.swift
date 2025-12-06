@@ -4,6 +4,34 @@ protocol ChatMessageDisplayable {
     func toView() -> some View
 }
 
+enum MessageType: String, Decodable {
+    case text
+    case image
+    case widget
+}
+
+struct MessageEnvelope: Decodable {
+    let message: any ChatMessageDisplayable
+
+    private enum CodingKeys: String, CodingKey {
+        case type
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(MessageType.self, forKey: .type)
+
+        switch type {
+        case .text:
+            self.message = try TextMessage(from: decoder)
+        case .image:
+            self.message = try ImageMessage(from: decoder)
+        case .widget:
+            self.message = try WidgetMessage(from: decoder)
+        }
+    }
+}
+
 struct TextMessage: Identifiable, Decodable, ChatMessageDisplayable {
     let id: UUID
     let text: String
@@ -87,6 +115,30 @@ struct WidgetMessage: Identifiable, Decodable, ChatMessageDisplayable {
             Text(subtitle)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+        }
+    }
+}
+
+enum MockDataLoader {
+    static func loadMessages() -> [any ChatMessageDisplayable] {
+        let jsonString = """
+        [
+          { "type": "text", "text": "Hello! Welcome to the chat." },
+          { "type": "image", "imageName": "SampleImage" },
+          { "type": "widget", "title": "Upcoming Meeting", "subtitle": "Today at 3 PM" }
+        ]
+        """
+
+        guard let data = jsonString.data(using: .utf8) else {
+            return []
+        }
+
+        do {
+            let envelopes = try JSONDecoder().decode([MessageEnvelope].self, from: data)
+            return envelopes.map { $0.message }
+        } catch {
+            print("Failed to decode messages: \(error)")
+            return []
         }
     }
 }
