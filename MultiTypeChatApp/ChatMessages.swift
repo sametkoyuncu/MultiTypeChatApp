@@ -8,6 +8,8 @@ enum MessageType: String, Decodable {
     case text
     case image
     case widget
+    case system
+    case quote
 }
 
 struct MessageEnvelope: Decodable {
@@ -28,6 +30,10 @@ struct MessageEnvelope: Decodable {
             self.message = try ImageMessage(from: decoder)
         case .widget:
             self.message = try WidgetMessage(from: decoder)
+        case .system:
+            self.message = try SystemMessage(from: decoder)
+        case .quote:
+            self.message = try QuoteMessage(from: decoder)
         }
     }
 }
@@ -156,6 +162,120 @@ struct WidgetMessage: Identifiable, Decodable, ChatMessageDisplayable {
     }
 }
 
+struct SystemMessage: Identifiable, Decodable, ChatMessageDisplayable {
+    enum Severity: String, Decodable {
+        case info
+        case warning
+    }
+
+    let id: UUID
+    let text: String
+    let severity: Severity
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case text
+        case severity
+    }
+
+    init(id: UUID = UUID(), text: String, severity: Severity) {
+        self.id = id
+        self.text = text
+        self.severity = severity
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.text = try container.decode(String.self, forKey: .text)
+        self.severity = try container.decode(Severity.self, forKey: .severity)
+        self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+    }
+
+    func toView() -> AnyView {
+        AnyView(
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: severityIcon)
+                    .foregroundStyle(severityColor)
+                Text(text)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(severityColor.opacity(0.1))
+            )
+        )
+    }
+
+    private var severityColor: Color {
+        switch severity {
+        case .info:
+            return .blue
+        case .warning:
+            return .orange
+        }
+    }
+
+    private var severityIcon: String {
+        switch severity {
+        case .info:
+            return "info.circle"
+        case .warning:
+            return "exclamationmark.triangle"
+        }
+    }
+}
+
+struct QuoteMessage: Identifiable, Decodable, ChatMessageDisplayable {
+    let id: UUID
+    let author: String
+    let quote: String
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case author
+        case quote
+    }
+
+    init(id: UUID = UUID(), author: String, quote: String) {
+        self.id = id
+        self.author = author
+        self.quote = quote
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.author = try container.decode(String.self, forKey: .author)
+        self.quote = try container.decode(String.self, forKey: .quote)
+        self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+    }
+
+    func toView() -> AnyView {
+        AnyView(
+            VStack(alignment: .leading, spacing: 8) {
+                Text("“" + quote + "”")
+                    .font(.body)
+                Text(author)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.purple.opacity(0.08))
+            )
+            .overlay(alignment: .topLeading) {
+                Image(systemName: "quote.opening")
+                    .foregroundStyle(.purple)
+                    .padding(6)
+            }
+        )
+    }
+}
+
 struct WidgetMessageView: View {
     let title: String
     let subtitle: String
@@ -217,14 +337,14 @@ struct WidgetMessageView: View {
 
 enum MockDataLoader {
     static func loadMessages() -> [any ChatMessageDisplayable] {
-        let jsonString = """
-        [
-          { "type": "text", "text": "Hello! Welcome to the chat." },
-          { "type": "image", "imageURL": "https://picsum.photos/400", "caption": "A random inspiration" },
-          { "type": "widget", "title": "Upcoming Meeting", "subtitle": "Today at 3 PM", "choices": ["Join", "Maybe", "Decline"] }
-        ]
-        """
+        decodeMessages(from: liveJSON)
+    }
 
+    static func loadPreviewMessages() -> [any ChatMessageDisplayable] {
+        decodeMessages(from: previewJSON)
+    }
+
+    private static func decodeMessages(from jsonString: String) -> [any ChatMessageDisplayable] {
         guard let data = jsonString.data(using: .utf8) else {
             return []
         }
@@ -237,4 +357,23 @@ enum MockDataLoader {
             return []
         }
     }
+
+    private static let liveJSON = """
+    [
+      { "type": "system", "text": "Yeni sürüm hazır!", "severity": "info" },
+      { "type": "text", "text": "Hello! Welcome to the chat." },
+      { "type": "image", "imageURL": "https://picsum.photos/400", "caption": "A random inspiration" },
+      { "type": "quote", "author": "Grace Hopper", "quote": "The most dangerous phrase in the language is, 'We've always done it this way.'" },
+      { "type": "widget", "title": "Upcoming Meeting", "subtitle": "Today at 3 PM", "choices": ["Join", "Maybe", "Decline"] },
+      { "type": "system", "text": "Bağlantı yavaş görünüyor, lütfen bekleyin", "severity": "warning" }
+    ]
+    """
+
+    private static let previewJSON = """
+    [
+      { "type": "text", "text": "Örnek mesaj" },
+      { "type": "quote", "author": "Atatürk", "quote": "Yurtta sulh, cihanda sulh." },
+      { "type": "system", "text": "Deneme uyarısı", "severity": "info" }
+    ]
+    """
 }

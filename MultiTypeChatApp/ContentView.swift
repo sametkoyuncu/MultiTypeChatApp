@@ -15,6 +15,12 @@ struct ContentView: View {
 
 struct MessageListView: View {
     @State private var messages: [any ChatMessageDisplayable] = []
+    @State private var isLoading = false
+
+    init(previewMessages: [any ChatMessageDisplayable] = []) {
+        _messages = State(initialValue: previewMessages)
+        _isLoading = State(initialValue: previewMessages.isEmpty)
+    }
 
     var body: some View {
         NavigationStack {
@@ -23,6 +29,12 @@ struct MessageListView: View {
                     ForEach(Array(messages.enumerated()), id: \.element.id) { _, message in
                         message.toView()
                             .id(message.id)
+                    }
+
+                    if isLoading {
+                        ProgressView("Mesajlar yükleniyor...")
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.top, 24)
                     }
                 }
                 .padding()
@@ -39,15 +51,26 @@ struct MessageListView: View {
 
     @MainActor
     private func loadMessages() async {
+        isLoading = true
+        messages.removeAll()
+
         let loadedMessages = await fetchMessages()
-        messages = loadedMessages
+        for message in loadedMessages {
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            withAnimation(.easeIn(duration: 0.25)) {
+                messages.append(message)
+            }
+        }
+
+        isLoading = false
     }
 
     private func fetchMessages() async -> [any ChatMessageDisplayable] {
-        MockDataLoader.loadMessages()
+        try? await Task.sleep(nanoseconds: 800_000_000)
+        return MockDataLoader.loadMessages()
     }
 }
 
 #Preview {
-    ContentView()
+    MessageListView(previewMessages: MockDataLoader.loadPreviewMessages())
 }
