@@ -1,11 +1,30 @@
 import SwiftUI
 
+/// Metadata that can be shared across different message renderers.
+struct MessageMeta {
+    let senderName: String
+    let timestamp: Date
+    let avatarSystemImage: String
+
+    static func demo(senderName: String, avatarSystemImage: String, minutesAgo: Int) -> MessageMeta {
+        MessageMeta(
+            senderName: senderName,
+            timestamp: Date().addingTimeInterval(TimeInterval(-minutesAgo * 60)),
+            avatarSystemImage: avatarSystemImage
+        )
+    }
+}
+
 /// A message that can be rendered on the chat timeline.
 ///
 /// Each conforming type returns its own SwiftUI view via `toView()`,
-/// keeping the rendering opaque to the caller while preserving type safety.
+/// keeping the rendering opaque to the caller while exposing shared metadata
+/// for the outer container to render avatars and headers.
 protocol ChatMessageDisplayable: Identifiable {
-    /// Builds the concrete SwiftUI view for the message.
+    /// Metadata used by the bubble container (name, time, avatar).
+    var meta: MessageMeta { get }
+
+    /// Builds the concrete SwiftUI view for the message content.
     func toView() -> AnyView
 }
 
@@ -49,21 +68,24 @@ struct MessageEnvelope: Decodable {
 struct TextMessage: Identifiable, Decodable, ChatMessageDisplayable {
     let id: UUID
     let text: String
+    let meta: MessageMeta
 
     private enum CodingKeys: String, CodingKey {
         case id
         case text
     }
 
-    init(id: UUID = UUID(), text: String) {
+    init(id: UUID = UUID(), text: String, meta: MessageMeta = .demo(senderName: "Ada Lovelace", avatarSystemImage: "person.fill", minutesAgo: 2)) {
         self.id = id
         self.text = text
+        self.meta = meta
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.text = try container.decode(String.self, forKey: .text)
         self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        self.meta = .demo(senderName: "Ada Lovelace", avatarSystemImage: "person.fill", minutesAgo: 2)
     }
 
     func toView() -> AnyView {
@@ -84,6 +106,7 @@ struct ImageMessage: Identifiable, Decodable, ChatMessageDisplayable {
     let id: UUID
     let imageURL: String
     let caption: String
+    let meta: MessageMeta
 
     private enum CodingKeys: String, CodingKey {
         case id
@@ -91,10 +114,11 @@ struct ImageMessage: Identifiable, Decodable, ChatMessageDisplayable {
         case caption
     }
 
-    init(id: UUID = UUID(), imageURL: String, caption: String) {
+    init(id: UUID = UUID(), imageURL: String, caption: String, meta: MessageMeta = .demo(senderName: "Grace Hopper", avatarSystemImage: "camera.fill", minutesAgo: 5)) {
         self.id = id
         self.imageURL = imageURL
         self.caption = caption
+        self.meta = meta
     }
 
     init(from decoder: Decoder) throws {
@@ -102,6 +126,7 @@ struct ImageMessage: Identifiable, Decodable, ChatMessageDisplayable {
         self.imageURL = try container.decode(String.self, forKey: .imageURL)
         self.caption = try container.decode(String.self, forKey: .caption)
         self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        self.meta = .demo(senderName: "Grace Hopper", avatarSystemImage: "camera.fill", minutesAgo: 5)
     }
 
     func toView() -> AnyView {
@@ -142,6 +167,7 @@ struct WidgetMessage: Identifiable, Decodable, ChatMessageDisplayable {
     let title: String
     let subtitle: String
     let choices: [String]
+    let meta: MessageMeta
 
     private enum CodingKeys: String, CodingKey {
         case id
@@ -150,11 +176,12 @@ struct WidgetMessage: Identifiable, Decodable, ChatMessageDisplayable {
         case choices
     }
 
-    init(id: UUID = UUID(), title: String, subtitle: String, choices: [String]) {
+    init(id: UUID = UUID(), title: String, subtitle: String, choices: [String], meta: MessageMeta = .demo(senderName: "Sohbet Botu", avatarSystemImage: "sparkles", minutesAgo: 8)) {
         self.id = id
         self.title = title
         self.subtitle = subtitle
         self.choices = choices
+        self.meta = meta
     }
 
     init(from decoder: Decoder) throws {
@@ -163,6 +190,7 @@ struct WidgetMessage: Identifiable, Decodable, ChatMessageDisplayable {
         self.subtitle = try container.decode(String.self, forKey: .subtitle)
         self.choices = try container.decodeIfPresent([String].self, forKey: .choices) ?? []
         self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        self.meta = .demo(senderName: "Sohbet Botu", avatarSystemImage: "sparkles", minutesAgo: 8)
     }
 
     func toView() -> AnyView {
@@ -182,6 +210,7 @@ struct SystemMessage: Identifiable, Decodable, ChatMessageDisplayable {
     let id: UUID
     let text: String
     let severity: Severity
+    let meta: MessageMeta
 
     private enum CodingKeys: String, CodingKey {
         case id
@@ -189,10 +218,11 @@ struct SystemMessage: Identifiable, Decodable, ChatMessageDisplayable {
         case severity
     }
 
-    init(id: UUID = UUID(), text: String, severity: Severity) {
+    init(id: UUID = UUID(), text: String, severity: Severity, meta: MessageMeta = .demo(senderName: "Sistem", avatarSystemImage: "exclamationmark.triangle.fill", minutesAgo: 1)) {
         self.id = id
         self.text = text
         self.severity = severity
+        self.meta = meta
     }
 
     init(from decoder: Decoder) throws {
@@ -200,6 +230,7 @@ struct SystemMessage: Identifiable, Decodable, ChatMessageDisplayable {
         self.text = try container.decode(String.self, forKey: .text)
         self.severity = try container.decode(Severity.self, forKey: .severity)
         self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        self.meta = .demo(senderName: "Sistem", avatarSystemImage: "exclamationmark.triangle.fill", minutesAgo: 1)
     }
 
     func toView() -> AnyView {
@@ -244,6 +275,7 @@ struct QuoteMessage: Identifiable, Decodable, ChatMessageDisplayable {
     let id: UUID
     let author: String
     let quote: String
+    let meta: MessageMeta
 
     private enum CodingKeys: String, CodingKey {
         case id
@@ -251,10 +283,11 @@ struct QuoteMessage: Identifiable, Decodable, ChatMessageDisplayable {
         case quote
     }
 
-    init(id: UUID = UUID(), author: String, quote: String) {
+    init(id: UUID = UUID(), author: String, quote: String, meta: MessageMeta = .demo(senderName: "Derya", avatarSystemImage: "book.fill", minutesAgo: 12)) {
         self.id = id
         self.author = author
         self.quote = quote
+        self.meta = meta
     }
 
     init(from decoder: Decoder) throws {
@@ -262,6 +295,7 @@ struct QuoteMessage: Identifiable, Decodable, ChatMessageDisplayable {
         self.author = try container.decode(String.self, forKey: .author)
         self.quote = try container.decode(String.self, forKey: .quote)
         self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        self.meta = .demo(senderName: "Derya", avatarSystemImage: "book.fill", minutesAgo: 12)
     }
 
     func toView() -> AnyView {

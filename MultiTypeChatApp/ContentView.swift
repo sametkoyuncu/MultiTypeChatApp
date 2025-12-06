@@ -31,7 +31,7 @@ struct MessageListView: View {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     ForEach(messages.indices, id: \.self) { index in
                         let message = messages[index]
-                        message.toView()
+                        MessageBubble(message: message)
                     }
 
                     if isLoading {
@@ -73,6 +73,40 @@ struct MessageListView: View {
     private func fetchMessages() async -> [any ChatMessageDisplayable] {
         try? await Task.sleep(nanoseconds: 800_000_000)
         return MockDataLoader.loadMessages()
+    }
+}
+
+/// Wraps any chat message inside a bubble that renders avatar, sender name, and timestamp.
+struct MessageBubble: View {
+    let message: any ChatMessageDisplayable
+
+    private var formattedTime: String {
+        message.meta.timestamp.formatted(date: .omitted, time: .shortened)
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: message.meta.avatarSystemImage)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 36, height: 36)
+                .foregroundStyle(.tint)
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(message.meta.senderName)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    Spacer()
+                    Text(formattedTime)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                message.toView()
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
