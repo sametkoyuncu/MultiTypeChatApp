@@ -29,9 +29,9 @@ struct MessageListView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
-                    ForEach(Array(messages.enumerated()), id: \.element.id) { _, message in
+                    ForEach(messages.indices, id: \.self) { index in
+                        let message = messages[index]
                         message.toView()
-                            .id(message.id)
                     }
 
                     if isLoading {
