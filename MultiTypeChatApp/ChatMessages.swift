@@ -1,7 +1,7 @@
 import SwiftUI
 
-protocol ChatMessageDisplayable {
-    func toView() -> some View
+protocol ChatMessageDisplayable: Identifiable {
+    func toView() -> AnyView
 }
 
 enum MessageType: String, Decodable {
@@ -52,35 +52,72 @@ struct TextMessage: Identifiable, Decodable, ChatMessageDisplayable {
         self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
     }
 
-    func toView() -> some View {
-        Text(text)
+    func toView() -> AnyView {
+        AnyView(
+            Text(text)
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.blue.opacity(0.1))
+                )
+        )
     }
 }
 
 struct ImageMessage: Identifiable, Decodable, ChatMessageDisplayable {
     let id: UUID
-    let imageName: String
+    let imageURL: String
+    let caption: String
 
     private enum CodingKeys: String, CodingKey {
         case id
-        case imageName
+        case imageURL
+        case caption
     }
 
-    init(id: UUID = UUID(), imageName: String) {
+    init(id: UUID = UUID(), imageURL: String, caption: String) {
         self.id = id
-        self.imageName = imageName
+        self.imageURL = imageURL
+        self.caption = caption
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.imageName = try container.decode(String.self, forKey: .imageName)
+        self.imageURL = try container.decode(String.self, forKey: .imageURL)
+        self.caption = try container.decode(String.self, forKey: .caption)
         self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
     }
 
-    func toView() -> some View {
-        Image(imageName)
-            .resizable()
-            .scaledToFit()
+    func toView() -> AnyView {
+        AnyView(
+            VStack(alignment: .leading, spacing: 8) {
+                AsyncImage(url: URL(string: imageURL)) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFit()
+                            .cornerRadius(12)
+                    case .failure:
+                        Image(systemName: "photo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity)
+                            .foregroundStyle(.secondary)
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+                Text(caption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        )
     }
 }
 
@@ -88,34 +125,93 @@ struct WidgetMessage: Identifiable, Decodable, ChatMessageDisplayable {
     let id: UUID
     let title: String
     let subtitle: String
+    let choices: [String]
 
     private enum CodingKeys: String, CodingKey {
         case id
         case title
         case subtitle
+        case choices
     }
 
-    init(id: UUID = UUID(), title: String, subtitle: String) {
+    init(id: UUID = UUID(), title: String, subtitle: String, choices: [String]) {
         self.id = id
         self.title = title
         self.subtitle = subtitle
+        self.choices = choices
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.title = try container.decode(String.self, forKey: .title)
         self.subtitle = try container.decode(String.self, forKey: .subtitle)
+        self.choices = try container.decodeIfPresent([String].self, forKey: .choices) ?? []
         self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
     }
 
-    func toView() -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+    func toView() -> AnyView {
+        AnyView(
+            WidgetMessageView(title: title, subtitle: subtitle, choices: choices)
+        )
+    }
+}
+
+struct WidgetMessageView: View {
+    let title: String
+    let subtitle: String
+    let choices: [String]
+    @State private var selectedChoice: String?
+
+    private var availableChoices: [String] {
+        choices.isEmpty ? ["Tamam"] : choices
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.headline)
             Text(subtitle)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+
+            HStack {
+                ForEach(availableChoices, id: \.self) { choice in
+                    Button {
+                        selectedChoice = choice
+                    } label: {
+                        Text(choice)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(selectionBackground(for: choice))
+                            )
+                            .foregroundStyle(selectionForeground(for: choice))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if let selectedChoice {
+                Text("Seçilen: \(selectedChoice)")
+                    .font(.footnote)
+                    .foregroundStyle(.green)
+            }
         }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(.gray.opacity(0.2))
+        )
+    }
+
+    private func selectionBackground(for choice: String) -> Color {
+        selectedChoice == choice ? .blue.opacity(0.2) : .gray.opacity(0.1)
+    }
+
+    private func selectionForeground(for choice: String) -> Color {
+        selectedChoice == choice ? .blue : .primary
     }
 }
 
@@ -124,8 +220,8 @@ enum MockDataLoader {
         let jsonString = """
         [
           { "type": "text", "text": "Hello! Welcome to the chat." },
-          { "type": "image", "imageName": "SampleImage" },
-          { "type": "widget", "title": "Upcoming Meeting", "subtitle": "Today at 3 PM" }
+          { "type": "image", "imageURL": "https://picsum.photos/400", "caption": "A random inspiration" },
+          { "type": "widget", "title": "Upcoming Meeting", "subtitle": "Today at 3 PM", "choices": ["Join", "Maybe", "Decline"] }
         ]
         """
 

@@ -8,14 +8,30 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var messages: [any ChatMessageDisplayable] = MockDataLoader.loadMessages()
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationStack {
+            MessageListView(messages: messages)
+                .navigationTitle("Chat")
         }
-        .padding()
+    }
+}
+
+struct MessageListView: View {
+    let messages: [any ChatMessageDisplayable]
+
+    var body: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 16) {
+                ForEach(Array(messages.enumerated()), id: \.element.id) { _, message in
+                    message.toView()
+                        .id(message.id)
+                }
+            }
+            .padding()
+        }
+        .background(Color(.systemGroupedBackground))
     }
 }
 
