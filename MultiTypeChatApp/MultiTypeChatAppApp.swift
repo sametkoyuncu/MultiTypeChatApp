@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+/// Entry point for the demo chat application showcasing opaque and associated types.
 @main
 struct MultiTypeChatAppApp: App {
     var body: some Scene {

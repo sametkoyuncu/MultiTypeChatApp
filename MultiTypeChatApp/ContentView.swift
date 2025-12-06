@@ -7,16 +7,19 @@
 
 import SwiftUI
 
+/// Hosts the chat timeline with no additional chrome for previews.
 struct ContentView: View {
     var body: some View {
         MessageListView()
     }
 }
 
+/// Displays the streaming list of chat messages and simulates async loading.
 struct MessageListView: View {
     @State private var messages: [any ChatMessageDisplayable] = []
     @State private var isLoading = false
 
+    /// Allows injecting preview data to bypass loading animations in SwiftUI previews.
     init(previewMessages: [any ChatMessageDisplayable] = []) {
         _messages = State(initialValue: previewMessages)
         _isLoading = State(initialValue: previewMessages.isEmpty)
@@ -49,6 +52,7 @@ struct MessageListView: View {
         }
     }
 
+    /// Sequentially loads messages to mimic streaming delivery.
     @MainActor
     private func loadMessages() async {
         isLoading = true
@@ -65,6 +69,7 @@ struct MessageListView: View {
         isLoading = false
     }
 
+    /// Fetches demo content with a small delay to keep the loading state visible.
     private func fetchMessages() async -> [any ChatMessageDisplayable] {
         try? await Task.sleep(nanoseconds: 800_000_000)
         return MockDataLoader.loadMessages()

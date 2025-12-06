@@ -1,9 +1,15 @@
 import SwiftUI
 
+/// A message that can be rendered on the chat timeline.
+///
+/// Each conforming type returns its own SwiftUI view via `toView()`,
+/// keeping the rendering opaque to the caller while preserving type safety.
 protocol ChatMessageDisplayable: Identifiable {
+    /// Builds the concrete SwiftUI view for the message.
     func toView() -> AnyView
 }
 
+/// Decodes the message `type` field and routes to the matching model.
 enum MessageType: String, Decodable {
     case text
     case image
@@ -12,6 +18,7 @@ enum MessageType: String, Decodable {
     case quote
 }
 
+/// A wrapper that reads the `type` discriminator and decodes the right message model.
 struct MessageEnvelope: Decodable {
     let message: any ChatMessageDisplayable
 
@@ -38,6 +45,7 @@ struct MessageEnvelope: Decodable {
     }
 }
 
+/// Plain text chat content.
 struct TextMessage: Identifiable, Decodable, ChatMessageDisplayable {
     let id: UUID
     let text: String
@@ -71,6 +79,7 @@ struct TextMessage: Identifiable, Decodable, ChatMessageDisplayable {
     }
 }
 
+/// A chat item that displays a remote image and its caption.
 struct ImageMessage: Identifiable, Decodable, ChatMessageDisplayable {
     let id: UUID
     let imageURL: String
@@ -127,6 +136,7 @@ struct ImageMessage: Identifiable, Decodable, ChatMessageDisplayable {
     }
 }
 
+/// An interactive widget (e.g., quick reply choices) embedded in the chat.
 struct WidgetMessage: Identifiable, Decodable, ChatMessageDisplayable {
     let id: UUID
     let title: String
@@ -162,6 +172,7 @@ struct WidgetMessage: Identifiable, Decodable, ChatMessageDisplayable {
     }
 }
 
+/// A system-level notice such as info or warning banners.
 struct SystemMessage: Identifiable, Decodable, ChatMessageDisplayable {
     enum Severity: String, Decodable {
         case info
@@ -228,6 +239,7 @@ struct SystemMessage: Identifiable, Decodable, ChatMessageDisplayable {
     }
 }
 
+/// A short quote paired with its author.
 struct QuoteMessage: Identifiable, Decodable, ChatMessageDisplayable {
     let id: UUID
     let author: String
@@ -276,6 +288,7 @@ struct QuoteMessage: Identifiable, Decodable, ChatMessageDisplayable {
     }
 }
 
+/// UI that renders quick reply buttons and shows the user’s selection.
 struct WidgetMessageView: View {
     let title: String
     let subtitle: String
@@ -335,6 +348,7 @@ struct WidgetMessageView: View {
     }
 }
 
+/// Provides static JSON for demos and previews and decodes them into message models.
 enum MockDataLoader {
     static func loadMessages() -> [any ChatMessageDisplayable] {
         decodeMessages(from: liveJSON)
@@ -344,6 +358,7 @@ enum MockDataLoader {
         decodeMessages(from: previewJSON)
     }
 
+    /// Converts the sample JSON string into `ChatMessageDisplayable` instances.
     private static func decodeMessages(from jsonString: String) -> [any ChatMessageDisplayable] {
         guard let data = jsonString.data(using: .utf8) else {
             return []
