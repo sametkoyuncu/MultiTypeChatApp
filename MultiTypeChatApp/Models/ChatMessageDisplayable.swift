@@ -1,15 +1,17 @@
 import SwiftUI
 
 /// A message that can be rendered on the chat timeline.
-/// Each conforming type returns its own SwiftUI view via `toView()`,
-/// keeping the rendering opaque to the caller while exposing shared metadata
-/// for the outer container to render avatars and headers.
+/// Each conforming type returns its own SwiftUI view via an **opaque** return type,
+/// and exposes shared metadata for the bubble wrapper.
 protocol ChatMessageDisplayable: Identifiable {
+    associatedtype Content: View
+
     /// Metadata used by the bubble container (name, time, avatar).
     var meta: MessageMeta { get }
 
-    /// Builds the concrete SwiftUI view for the message content.
-    func toView() -> AnyView
+    /// Builds the concrete SwiftUI view for the message content without type erasure.
+    @ViewBuilder
+    func toView() -> Content
 }
 
 /// Decodes the message `type` field and routes to the matching model.
@@ -21,9 +23,74 @@ enum MessageType: String, Decodable {
     case quote
 }
 
-/// A wrapper that reads the `type` discriminator and decodes the right message model.
+/// A strongly typed wrapper that reads the `type` discriminator and decodes
+/// the right message model while keeping the rendered view opaque.
+enum ChatMessage: Identifiable, ChatMessageDisplayable {
+    struct ContentView: View {
+        let message: ChatMessage
+
+        var body: some View {
+            switch message {
+            case .text(let message):
+                message.toView()
+            case .image(let message):
+                message.toView()
+            case .widget(let message):
+                message.toView()
+            case .system(let message):
+                message.toView()
+            case .quote(let message):
+                message.toView()
+            }
+        }
+    }
+
+    typealias Content = ContentView
+
+    case text(TextMessage)
+    case image(ImageMessage)
+    case widget(WidgetMessage)
+    case system(SystemMessage)
+    case quote(QuoteMessage)
+
+    var id: UUID {
+        switch self {
+        case .text(let message):
+            return message.id
+        case .image(let message):
+            return message.id
+        case .widget(let message):
+            return message.id
+        case .system(let message):
+            return message.id
+        case .quote(let message):
+            return message.id
+        }
+    }
+
+    var meta: MessageMeta {
+        switch self {
+        case .text(let message):
+            return message.meta
+        case .image(let message):
+            return message.meta
+        case .widget(let message):
+            return message.meta
+        case .system(let message):
+            return message.meta
+        case .quote(let message):
+            return message.meta
+        }
+    }
+
+    @ViewBuilder
+    func toView() -> ContentView {
+        ContentView(message: self)
+    }
+}
+
 struct MessageEnvelope: Decodable {
-    let message: any ChatMessageDisplayable
+    let message: ChatMessage
 
     private enum CodingKeys: String, CodingKey {
         case type
@@ -35,15 +102,15 @@ struct MessageEnvelope: Decodable {
 
         switch type {
         case .text:
-            self.message = try TextMessage(from: decoder)
+            self.message = .text(try TextMessage(from: decoder))
         case .image:
-            self.message = try ImageMessage(from: decoder)
+            self.message = .image(try ImageMessage(from: decoder))
         case .widget:
-            self.message = try WidgetMessage(from: decoder)
+            self.message = .widget(try WidgetMessage(from: decoder))
         case .system:
-            self.message = try SystemMessage(from: decoder)
+            self.message = .system(try SystemMessage(from: decoder))
         case .quote:
-            self.message = try QuoteMessage(from: decoder)
+            self.message = .quote(try QuoteMessage(from: decoder))
         }
     }
 }

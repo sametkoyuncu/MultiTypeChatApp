@@ -33,21 +33,20 @@ struct SystemMessage: Identifiable, Decodable, ChatMessageDisplayable {
         self.meta = .demo(senderName: "Sistem", avatarSystemImage: "exclamationmark.triangle.fill", minutesAgo: 1)
     }
 
-    func toView() -> AnyView {
-        AnyView(
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: severityIcon)
-                    .foregroundStyle(severityColor)
-                Text(text)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
-            }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(severityColor.opacity(0.1))
-            )
+    @ViewBuilder
+    func toView() -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: severityIcon)
+                .foregroundStyle(severityColor)
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(severityColor.opacity(0.1))
         )
     }
 

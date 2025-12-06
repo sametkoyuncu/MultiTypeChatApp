@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Wraps any chat message inside a bubble that renders avatar, sender name, and timestamp.
-struct MessageBubble: View {
-    let message: any ChatMessageDisplayable
+struct MessageBubble<Message: ChatMessageDisplayable>: View {
+    let message: Message
 
     private var formattedTime: String {
         message.meta.timestamp.formatted(date: .omitted, time: .shortened)

@@ -24,15 +24,14 @@ struct TextMessage: Identifiable, Decodable, ChatMessageDisplayable {
         self.meta = .demo(senderName: "Ada Lovelace", avatarSystemImage: "person.fill", minutesAgo: 2)
     }
 
-    func toView() -> AnyView {
-        AnyView(
-            Text(text)
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.blue.opacity(0.1))
-                )
-        )
+    @ViewBuilder
+    func toView() -> some View {
+        Text(text)
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.blue.opacity(0.1))
+            )
     }
 }

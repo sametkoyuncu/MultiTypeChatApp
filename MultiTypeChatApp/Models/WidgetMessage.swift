@@ -32,9 +32,8 @@ struct WidgetMessage: Identifiable, Decodable, ChatMessageDisplayable {
         self.meta = .demo(senderName: "Sohbet Botu", avatarSystemImage: "sparkles", minutesAgo: 8)
     }
 
-    func toView() -> AnyView {
-        AnyView(
-            WidgetMessageView(title: title, subtitle: subtitle, choices: choices)
-        )
+    @ViewBuilder
+    func toView() -> some View {
+        WidgetMessageView(title: title, subtitle: subtitle, choices: choices)
     }
 }

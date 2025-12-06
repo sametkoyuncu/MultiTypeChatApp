@@ -28,26 +28,25 @@ struct QuoteMessage: Identifiable, Decodable, ChatMessageDisplayable {
         self.meta = .demo(senderName: "Derya", avatarSystemImage: "book.fill", minutesAgo: 12)
     }
 
-    func toView() -> AnyView {
-        AnyView(
-            VStack(alignment: .leading, spacing: 8) {
-                Text("“" + quote + "”")
-                    .font(.body)
-                Text(author)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.purple.opacity(0.08))
-            )
-            .overlay(alignment: .topLeading) {
-                Image(systemName: "quote.opening")
-                    .foregroundStyle(.purple)
-                    .padding(6)
-            }
+    @ViewBuilder
+    func toView() -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("“" + quote + "”")
+                .font(.body)
+            Text(author)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.purple.opacity(0.08))
         )
+        .overlay(alignment: .topLeading) {
+            Image(systemName: "quote.opening")
+                .foregroundStyle(.purple)
+                .padding(6)
+        }
     }
 }

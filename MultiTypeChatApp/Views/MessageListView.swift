@@ -2,12 +2,12 @@ import SwiftUI
 
 /// Displays the streaming list of chat messages and simulates async loading.
 struct MessageListView: View {
-    @State private var messages: [any ChatMessageDisplayable] = []
+    @State private var messages: [ChatMessage] = []
     @State private var isLoading = false
     private let shouldAutoLoad: Bool
 
     /// Allows injecting preview data to bypass loading animations in SwiftUI previews.
-    init(previewMessages: [any ChatMessageDisplayable] = []) {
+    init(previewMessages: [ChatMessage] = []) {
         _messages = State(initialValue: previewMessages)
         _isLoading = State(initialValue: previewMessages.isEmpty)
         self.shouldAutoLoad = previewMessages.isEmpty
@@ -59,7 +59,7 @@ struct MessageListView: View {
     }
 
     /// Fetches demo content with a small delay to keep the loading state visible.
-    private func fetchMessages() async -> [any ChatMessageDisplayable] {
+    private func fetchMessages() async -> [ChatMessage] {
         try? await Task.sleep(nanoseconds: 800_000_000)
         return MockDataLoader.loadMessages()
     }

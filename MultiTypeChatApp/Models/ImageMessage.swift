@@ -28,34 +28,33 @@ struct ImageMessage: Identifiable, Decodable, ChatMessageDisplayable {
         self.meta = .demo(senderName: "Grace Hopper", avatarSystemImage: "camera.fill", minutesAgo: 5)
     }
 
-    func toView() -> AnyView {
-        AnyView(
-            VStack(alignment: .leading, spacing: 8) {
-                AsyncImage(url: URL(string: imageURL)) { phase in
-                    switch phase {
-                    case .empty:
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFit()
-                            .cornerRadius(12)
-                    case .failure:
-                        Image(systemName: "photo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxWidth: .infinity)
-                            .foregroundStyle(.secondary)
-                    @unknown default:
-                        EmptyView()
-                    }
+    @ViewBuilder
+    func toView() -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            AsyncImage(url: URL(string: imageURL)) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .cornerRadius(12)
+                case .failure:
+                    Image(systemName: "photo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .foregroundStyle(.secondary)
+                @unknown default:
+                    EmptyView()
                 }
-                Text(caption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        )
+            Text(caption)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
